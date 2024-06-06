@@ -43,8 +43,6 @@ def main(args):
     evaluator.run()
 
 
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Get Recall@FA metric of detection results")
     parser.add_argument("--infer_json", type=str, help="infer json path")

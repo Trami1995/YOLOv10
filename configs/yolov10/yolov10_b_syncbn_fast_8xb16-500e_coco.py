@@ -2,8 +2,8 @@ _base_ = ['../_base_/default_runtime.py', '../_base_/det_p5_tta.py']
 
 # ========================Frequently modified parameters======================
 # -----data related-----
-work_dir = "/mnt/CEPH_CHANNEL/jianghui_0530/Detection/07_coconut_yolov10/exp/coco_align"
-data_root = '/mnt/CEPH_CHANNEL/jianghui_0530/Detection/01_codetr/dataset/'  # Root path of data
+work_dir = "/****/yolov10/exp/coco_align"
+data_root = '/****/Detection/dataset/'  # Root path of data
 # Path of train annotation file
 train_ann_file = 'annotations/instances_train2017.json'
 train_data_prefix = 'train2017/'  # Prefix of train image path

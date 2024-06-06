@@ -1,4 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .custom_metric import YituCustomMetric
+from .custom_metric import DavarCustomMetric
 
-__all__ = ['YituCustomMetric']
+__all__ = ['DavarCustomMetric']

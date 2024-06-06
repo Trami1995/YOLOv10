@@ -6,11 +6,11 @@ from .yolov5_coco import YOLOv5CocoDataset
 from .yolov5_crowdhuman import YOLOv5CrowdHumanDataset
 from .yolov5_dota import YOLOv5DOTADataset
 from .yolov5_voc import YOLOv5VOCDataset
-from .yitu_custom import YITUCustomDataset
+from .customdataset import DavarCustomDataset
 from mmengine.dataset import ConcatDataset
 
 __all__ = [
     'YOLOv5CocoDataset', 'YOLOv5VOCDataset', 'BatchShapePolicy',
     'yolov5_collate', 'YOLOv5CrowdHumanDataset', 'YOLOv5DOTADataset',
-    'PoseCocoDataset', 'ConcatDataset', 'YITUCustomDataset'
+    'PoseCocoDataset', 'ConcatDataset', 'DavarCustomDataset'
 ]

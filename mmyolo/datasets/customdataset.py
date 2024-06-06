@@ -10,7 +10,7 @@ from ..registry import DATASETS
 
 
 @DATASETS.register_module()
-class YITUCustomDataset(BatchShapePolicyDataset, BaseDetDataset):
+class DavarCustomDataset(BatchShapePolicyDataset, BaseDetDataset):
     """ Implementation of the common dataset of davar group, which supports tasks of
         Object Detection, Classification, Semantic Segmentation, OCR, etc. Properties in 'content_ann' can be chosen
         according to different tasks.

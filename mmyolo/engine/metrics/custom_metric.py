@@ -23,8 +23,8 @@ from mmyolo.registry import METRICS
 logger: MMLogger = MMLogger.get_current_instance()
 
 @METRICS.register_module()
-class YituCustomMetric(BaseMetric):
-    """Evaluation metric for YituCustomDataset.
+class DavarCustomMetric(BaseMetric):
+    """Evaluation metric for DavarCustomMetric.
 
     Evaluate AR, AP, and mAP for detection tasks including proposal/box
     detection and instance segmentation. Please refer to
