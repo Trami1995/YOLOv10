@@ -114,7 +114,6 @@ model = dict(
         mean=[0., 0., 0.],
         std=[255., 255., 255.],
         bgr_to_rgb=True),
-    # backbone=dict(type='YOLOv10LargeBackbone'),
     backbone=dict(
         type='YOLOv10Backbone',
         arch='P5',
