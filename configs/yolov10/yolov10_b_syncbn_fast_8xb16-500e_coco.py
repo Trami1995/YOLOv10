@@ -33,6 +33,8 @@ model_test_cfg = dict(
     multi_label=True,
     # The number of boxes before NMS
     nms_pre=30000,
+    one2one_withnms=False,
+    one2many_withnms=True,
     score_thr=0.001,  # Threshold to filter out boxes.
     max_per_img=300)  # Max number of detections of each image
 
@@ -75,9 +77,9 @@ norm_cfg = dict(type='BN', momentum=0.03, eps=0.001)  # Normalization config
 affine_scale = 0.5  # YOLOv5RandomAffine scaling ratio
 # YOLOv5RandomAffine aspect ratio of width and height thres to filter bboxes
 max_aspect_ratio = 100
-many2one_tal_topk = 10  # Number of bbox selected in each level
-many2one_tal_alpha = 0.5  # A Hyper-parameter related to alignment_metrics
-many2one_tal_beta = 6.0  # A Hyper-parameter related to alignment_metrics
+one2many_tal_topk = 10  # Number of bbox selected in each level
+one2many_tal_alpha = 0.5  # A Hyper-parameter related to alignment_metrics
+one2many_tal_beta = 6.0  # A Hyper-parameter related to alignment_metrics
 
 one2one_tal_topk = 1  # Number of bbox selected in each level
 one2one_tal_alpha = 0.5  # A Hyper-parameter related to alignment_metrics
@@ -163,13 +165,13 @@ model = dict(
             reduction='mean',
             loss_weight=loss_dfl_weight)),
     train_cfg=dict(
-        many2one_assigner=dict(
+        one2many_assigner=dict(
             type='BatchTaskAlignedAssigner',
             num_classes=num_classes,
             use_ciou=True,
-            topk=many2one_tal_topk,
-            alpha=many2one_tal_alpha,
-            beta=many2one_tal_beta,
+            topk=one2many_tal_topk,
+            alpha=one2many_tal_alpha,
+            beta=one2many_tal_beta,
             eps=1e-9),
         one2one_assigner=dict(
             type='BatchTaskAlignedAssigner',

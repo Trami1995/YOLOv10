@@ -1,4 +1,4 @@
-# YOLOv8
+# YOLOv10
 
 <!-- [ALGORITHM] -->
 

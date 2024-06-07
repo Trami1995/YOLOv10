@@ -26,7 +26,7 @@ from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 
 @MODELS.register_module()
 class YOLOv10HeadModule(BaseModule):
-    """YOLOv8HeadModule head module used in `YOLOv8`.
+    """YOLOv10HeadModule head module used in `YOLOv10`.
 
     Args:
         num_classes (int): Number of categories excluding the background
@@ -77,36 +77,36 @@ class YOLOv10HeadModule(BaseModule):
             in_channels.append(channel)
         self.in_channels = in_channels
 
-        self.many2one_init_layers()
+        self.one2many_init_layers()
         self.one2one_init_layers()
 
     def init_weights(self, prior_prob=0.01):
         """Initialize the weight and bias of PPYOLOE head."""
         super().init_weights()
-        for many2one_reg_pred, many2one_cls_pred, one2one_reg_pred, one2one_cls_pred, stride in zip(self.many2one_reg_preds,
-                                                                                                    self.many2one_cls_preds,
+        for one2many_reg_pred, one2many_cls_pred, one2one_reg_pred, one2one_cls_pred, stride in zip(self.one2many_reg_preds,
+                                                                                                    self.one2many_cls_preds,
                                                                                                     self.one2one_reg_preds,
                                                                                                     self.one2one_cls_preds,
                                                                                                     self.featmap_strides):
-            many2one_reg_pred[-1].bias.data[:] = 1.0  # box
+            one2many_reg_pred[-1].bias.data[:] = 1.0  # box
             one2one_reg_pred[-1].bias.data[:] = 1.0  # box
             
             # cls (.01 objects, 80 classes, 640 img)
-            many2one_cls_pred[-1].bias.data[:self.num_classes] = math.log(5 / self.num_classes / (640 / stride)**2)
+            one2many_cls_pred[-1].bias.data[:self.num_classes] = math.log(5 / self.num_classes / (640 / stride)**2)
             one2one_cls_pred[-1].bias.data[:self.num_classes] = math.log(5 / self.num_classes / (640 / stride)**2)
 
 
-    def many2one_init_layers(self):
+    def one2many_init_layers(self):
         """initialize conv layers in YOLOv8 head."""
         # Init decouple head
-        self.many2one_cls_preds = nn.ModuleList()
-        self.many2one_reg_preds = nn.ModuleList()
+        self.one2many_cls_preds = nn.ModuleList()
+        self.one2many_reg_preds = nn.ModuleList()
 
         reg_out_channels = max((16, self.in_channels[0] // 4, self.reg_max * 4))
         cls_out_channels = max(self.in_channels[0], self.num_classes)
 
         for i in range(self.num_levels):
-            self.many2one_reg_preds.append(
+            self.one2many_reg_preds.append(
                 nn.Sequential(
                     ConvModule(
                         in_channels=self.in_channels[i],
@@ -128,7 +128,7 @@ class YOLOv10HeadModule(BaseModule):
                         in_channels=reg_out_channels,
                         out_channels=4 * self.reg_max,
                         kernel_size=1)))
-            self.many2one_cls_preds.append(
+            self.one2many_cls_preds.append(
                 nn.Sequential(
                     ConvModule(
                         in_channels=self.in_channels[i],
@@ -152,7 +152,7 @@ class YOLOv10HeadModule(BaseModule):
                         kernel_size=1)))
 
         proj = torch.arange(self.reg_max, dtype=torch.float)
-        self.register_buffer('many2one_proj', proj, persistent=False)
+        self.register_buffer('one2many_proj', proj, persistent=False)
 
     def one2one_init_layers(self):
         """initialize conv layers in YOLOv8 head."""
@@ -226,7 +226,7 @@ class YOLOv10HeadModule(BaseModule):
         proj = torch.arange(self.reg_max, dtype=torch.float)
         self.register_buffer('one2one_proj', proj, persistent=False)
 
-    def forward_many2one(self, x: Tuple[Tensor]) -> Tuple[List]:
+    def forward_one2many(self, x: Tuple[Tensor]) -> Tuple[List]:
         """Forward features from the upstream network.
 
         Args:
@@ -238,7 +238,7 @@ class YOLOv10HeadModule(BaseModule):
         """
         assert len(x) == self.num_levels
         
-        return multi_apply(self.many2one_forward_single, x, self.many2one_cls_preds, self.many2one_reg_preds)
+        return multi_apply(self.one2many_forward_single, x, self.one2many_cls_preds, self.one2many_reg_preds)
 
     def forward_one2one(self, x: Tuple[Tensor]) -> Tuple[List]:
         """Forward features from the upstream network.
@@ -254,7 +254,7 @@ class YOLOv10HeadModule(BaseModule):
         return multi_apply(self.one2one_forward_single, x, self.one2one_cls_preds, self.one2one_reg_preds)
 
 
-    def many2one_forward_single(self, x: torch.Tensor, cls_pred: nn.ModuleList,
+    def one2many_forward_single(self, x: torch.Tensor, cls_pred: nn.ModuleList,
                                 reg_pred: nn.ModuleList) -> Tuple:
         """Forward feature of a single scale level."""
         b, _, h, w = x.shape
@@ -266,7 +266,7 @@ class YOLOv10HeadModule(BaseModule):
             # TODO: The get_flops script cannot handle the situation of
             #  matmul, and needs to be fixed later
             # bbox_preds = bbox_dist_preds.softmax(3).matmul(self.proj)
-            bbox_preds = bbox_dist_preds.softmax(3).matmul(self.many2one_proj.view([-1, 1])).squeeze(-1)
+            bbox_preds = bbox_dist_preds.softmax(3).matmul(self.one2many_proj.view([-1, 1])).squeeze(-1)
             bbox_preds = bbox_preds.transpose(1, 2).reshape(b, -1, h, w)
         else:
             bbox_preds = bbox_dist_preds
@@ -366,7 +366,7 @@ class YOLOv10Head(BaseDenseHead):
         self.featmap_sizes = [torch.empty(1)] * self.num_levels
 
         self.infer_type = infer_type
-        self.many2one_train_cfg = train_cfg.get("many2one_assigner", None)
+        self.one2many_train_cfg = train_cfg.get("one2many_assigner", None)
         self.one2one_train_cfg = train_cfg.get("one2one_assigner", None)
         self.test_cfg = test_cfg
 
@@ -382,8 +382,8 @@ class YOLOv10Head(BaseDenseHead):
 
         The special_init function is designed to deal with this situation.
         """
-        if self.many2one_train_cfg:
-            self.many2one_assigner = TASK_UTILS.build(self.many2one_train_cfg)
+        if self.one2many_train_cfg:
+            self.one2many_assigner = TASK_UTILS.build(self.one2many_train_cfg)
 
             # Add common attributes to reduce calculation
             self.featmap_sizes_train = None
@@ -411,11 +411,11 @@ class YOLOv10Head(BaseDenseHead):
             predictions, and objectnesses.
         """
 
-        many2one_result = self.head_module.forward_many2one(x)
+        one2many_result = self.head_module.forward_one2many(x)
 
         one2one_result = self.head_module.forward_one2one(x)
 
-        return many2one_result, one2one_result
+        return one2many_result, one2one_result
 
     def loss(self, x: Tuple[Tensor], batch_data_samples: Union[list,
                                                                dict]) -> dict:
@@ -433,17 +433,17 @@ class YOLOv10Head(BaseDenseHead):
             dict: A dictionary of loss components.
         """
 
-        x_many2one, x_one2one =  self.forward(x)
+        x_one2many, x_one2one =  self.forward(x)
 
         if isinstance(batch_data_samples, list):
-            losses = super().loss(x_many2one, batch_data_samples)
+            losses = super().loss(x_one2many, batch_data_samples)
         else:
-            many2one_outs = x_many2one
+            one2many_outs = x_one2many
             one2one_outs = x_one2one
             # Fast version
-            many2one_loss_inputs = many2one_outs + (batch_data_samples['bboxes_labels'], batch_data_samples['img_metas'])
+            one2many_loss_inputs = one2many_outs + (batch_data_samples['bboxes_labels'], batch_data_samples['img_metas'])
             one2one_loss_inputs = one2one_outs + (batch_data_samples['bboxes_labels'], batch_data_samples['img_metas'])
-            losses = self.loss_by_feat([many2one_loss_inputs, one2one_loss_inputs])
+            losses = self.loss_by_feat([one2many_loss_inputs, one2one_loss_inputs])
 
         return losses
 
@@ -451,15 +451,15 @@ class YOLOv10Head(BaseDenseHead):
             self,
             all2one
             ) -> dict:
-        many2one_loss_inputs = all2one[0]
+        one2many_loss_inputs = all2one[0]
         one2one_loss_inputs = all2one[1]
 
-        losses = self.many2one_loss_by_feat(*many2one_loss_inputs)
+        losses = self.one2many_loss_by_feat(*one2many_loss_inputs)
         losses.update(self.one2one_loss_by_feat(*one2one_loss_inputs)) 
         return losses
         
     
-    def many2one_loss_by_feat(
+    def one2many_loss_by_feat(
             self,
             cls_scores: Sequence[Tensor],
             bbox_preds: Sequence[Tensor],
@@ -535,7 +535,7 @@ class YOLOv10Head(BaseDenseHead):
             self.flatten_priors_train[..., :2], flatten_pred_bboxes,
             self.stride_tensor[..., 0])
 
-        assigned_result = self.many2one_assigner(
+        assigned_result = self.one2many_assigner(
             (flatten_pred_bboxes.detach()).type(gt_bboxes.dtype),
             flatten_cls_preds.detach().sigmoid(), self.flatten_priors_train,
             gt_labels, gt_bboxes, pad_bbox_flag)
@@ -590,9 +590,9 @@ class YOLOv10Head(BaseDenseHead):
         _, world_size = get_dist_info()
 
         return dict(
-            many2one_loss_cls=loss_cls * num_imgs * world_size,
-            many2one_loss_bbox=loss_bbox * num_imgs * world_size,
-            many2one_loss_dfl=loss_dfl * num_imgs * world_size)
+            one2many_loss_cls=loss_cls * num_imgs * world_size,
+            one2many_loss_bbox=loss_bbox * num_imgs * world_size,
+            one2many_loss_dfl=loss_dfl * num_imgs * world_size)
     
     def one2one_loss_by_feat(
             self,
@@ -752,19 +752,27 @@ class YOLOv10Head(BaseDenseHead):
             after the post process.
         """
 
-        x_many2one, x_one2one = self.forward(x)
+        x_one2many, x_one2one = self.forward(x)
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
     
         if self.infer_type == "one2one":
             outs = x_one2one
-        elif self.infer_type == "many2one":
-            outs = x_many2one
+            predictions = self.predict_by_feat(*outs,
+                                               batch_img_metas=batch_img_metas,
+                                               rescale=rescale,
+                                               with_nms=self.test_cfg.get("one2one_withnms", False))
+        elif self.infer_type == "one2many":
+            outs = x_one2many
+            predictions = self.predict_by_feat(*outs,
+                                               batch_img_metas=batch_img_metas,
+                                               rescale=rescale,
+                                               with_nms=self.test_cfg.get("one2many_withnms", False))
         else:
             raise Exception("unsupported infer type")
 
-        predictions = self.predict_by_feat(*outs, batch_img_metas=batch_img_metas, rescale=rescale)
+        
         return predictions
 
     def predict_by_feat(self,
