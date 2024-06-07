@@ -289,6 +289,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 - [x] [YOLOv7](configs/yolov7)
 - [x] [PPYOLOE](configs/ppyoloe)
 - [x] [YOLOv8](configs/yolov8)
+- [x] [YOLOv10](configs/yolov10)
 
 </details>
 
