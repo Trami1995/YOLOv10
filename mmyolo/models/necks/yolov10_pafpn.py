@@ -7,6 +7,8 @@ from mmdet.utils import ConfigType, OptMultiConfig
 from mmcv.cnn import ConvModule
 
 from mmyolo.registry import MODELS
+from mmengine.model import constant_init, kaiming_init
+
 from .. import CSPLayerWithTwoConv, SCDown, C2fCIB
 from ..utils import make_divisible, make_round
 from .yolov5_pafpn import YOLOv5PAFPN
@@ -163,6 +165,14 @@ class YOLOv10PAFPN(YOLOv5PAFPN):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg)
 
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode="fan_out",
+                                nonlinearity='relu',
+                                distribution='normal')  # leaky_relu
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                constant_init(m, 1, bias=0)
 
     def forward(self, inputs: List[torch.Tensor]) -> tuple:
         """Forward function."""

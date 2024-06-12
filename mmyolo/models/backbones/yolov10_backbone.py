@@ -14,6 +14,7 @@ from mmyolo.registry import MODELS
 from .base_backbone import BaseBackbone
 from mmdet.utils import ConfigType, OptMultiConfig
 from mmengine.model import BaseModule
+from mmengine.model import constant_init, kaiming_init
 
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
@@ -384,13 +385,11 @@ class YOLOv10Backbone(BaseBackbone):
             
         return stage
 
-    # def init_weights(self):
-    #     """Initialize the parameters."""
-    #     if self.init_cfg is None:
-    #         for m in self.modules():
-    #             if isinstance(m, torch.nn.Conv2d):
-    #                 # In order to be consistent with the source code,
-    #                 # reset the Conv2d initialization parameters
-    #                 m.reset_parameters()
-    #     else:
-    #         super().init_weights()
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode="fan_out",
+                                nonlinearity='relu',
+                                distribution='normal')  # leaky_relu
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                constant_init(m, 1, bias=0)
